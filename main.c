@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <util/atomic.h>
 
+#define LED_MASK_B ((1 << PB2) | (1 << PB3) | (1 << PB4) | (1 << PB5))
+
 volatile uint32_t g_ms = 0;
 
 uint32_t millis(void) 
@@ -34,7 +36,7 @@ ISR(TIMER0_COMPA_vect)
 int main(void)
 {
     // Pin 13 på Arduino Uno = PB5 på ATmega328P
-    DDRB |= (1 << DDB5);   // Sätt PB5 som utgång
+    DDRB |= LED_MASK_B;   // Sätt PB2-PB5 som utgång
 
     timer0_init_ms();
 
@@ -50,10 +52,10 @@ int main(void)
             lastToggle += interval;
             ledOn = !ledOn;
             if(ledOn == 1) {
-                PORTB |= (1 << PORTB5);
+                PORTB |= LED_MASK_B;
             }
             else {
-                PORTB &= ~(1 << PORTB5);
+                PORTB &= ~LED_MASK_B;
             }
         }
     }
