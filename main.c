@@ -33,23 +33,45 @@ ISR(TIMER0_COMPA_vect)
     g_ms++;
 }
 
+void adc_init_a0(void) 
+{
+    //ADMUX = AVcc + channel 0
+    ADMUX = (1 << REFS0);
+    ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+
+}
+
+uint16_t adc_read_blocking(void) 
+{
+    ADCSRA |= (1 << ADSC);
+    while ((ADCSRA & (1 << ADIF)) == 0) {}
+    uint16_t value = ADC;
+    ADCSRA |= (1 << ADIF);
+
+    return value;
+}
+
 int main(void)
 {
     // Pin 13 på Arduino Uno = PB5 på ATmega328P
     DDRB |= LED_MASK_B;   // Sätt PB2-PB5 som utgång
 
     timer0_init_ms();
+    adc_init_a0();
 
     uint32_t lastToggle = 0;
     uint16_t interval = 250;
     uint8_t ledOn = 0;
+    uint32_t lastAdcRead = 0;
+    uint16_t adcLatest = 0;
 
     while (1)
     {
         uint32_t now = millis();
 
-        if (now - lastToggle >= interval) {
-            lastToggle += interval;
+        if (now - lastToggle >= interval) 
+        {
+            lastToggle = now;
             ledOn = !ledOn;
             if(ledOn == 1) {
                 PORTB |= LED_MASK_B;
@@ -57,6 +79,12 @@ int main(void)
             else {
                 PORTB &= ~LED_MASK_B;
             }
+        }
+        
+        if (now - lastAdcRead >= 20) 
+        {
+            adcLatest = adc_read_blocking();
+            lastAdcRead = now;
         }
     }
 
