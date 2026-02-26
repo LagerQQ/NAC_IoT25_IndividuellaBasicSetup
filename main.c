@@ -69,22 +69,28 @@ int main(void)
     {
         uint32_t now = millis();
 
-        if (now - lastToggle >= interval) 
-        {
-            lastToggle = now;
-            ledOn = !ledOn;
-            if(ledOn == 1) {
-                PORTB |= LED_MASK_B;
-            }
-            else {
-                PORTB &= ~LED_MASK_B;
-            }
-        }
-        
+        //ADC läses periodiskt var 20 ms för att undvika onödiga mätningar och blockering i huvudloopen.
         if (now - lastAdcRead >= 20) 
         {
             adcLatest = adc_read_blocking();
+            uint16_t scaled = adcLatest >> 2;
+            uint16_t extra_ms = scaled * 10;
+            interval = 250 + extra_ms;
             lastAdcRead = now;
+        }
+
+        if (now - lastToggle >= interval) 
+        {
+            lastToggle += interval;
+            ledOn = !ledOn;
+            if(ledOn == 1) 
+            {
+                PORTB |= LED_MASK_B;
+            }
+            else 
+            {
+                PORTB &= ~LED_MASK_B;
+            }
         }
     }
 

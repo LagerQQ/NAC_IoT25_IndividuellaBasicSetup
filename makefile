@@ -13,7 +13,7 @@ F_CPU       := 16000000UL
 
 # Programmer / Port
 PROGRAMMER  := arduino
-PORT        := COM3
+PORT        := COM4
 BAUD        := 115200
 
 # Verktyg (måste finnas i PATH)
