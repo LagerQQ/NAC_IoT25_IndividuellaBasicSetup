@@ -3,8 +3,21 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 #include <util/atomic.h>
+#include <stdio.h>
 
 #define LED_MASK_B ((1 << PB2) | (1 << PB3) | (1 << PB4) | (1 << PB5))
+#define RGB_R_MASK_B ((1 << PB0))
+#define ENCODER_MASK_D ((1 << PD2) | (1 << PD3) | (1 << PD4))
+#define RGB_GB_MASK_D ((1 << PD6) | (1 << PD7))
+
+typedef enum
+{
+    OFF = 0,
+    RED = 1,
+    GREEN = 2,
+    BLUE = 3,
+    WHITE = 4
+}RGB;
 
 volatile uint32_t g_ms = 0;
 
@@ -51,23 +64,93 @@ uint16_t adc_read_blocking(void)
     return value;
 }
 
+void set_rgb(RGB color) 
+{
+    PORTB &= ~RGB_R_MASK_B;
+    PORTD &= ~RGB_GB_MASK_D;
+
+    switch (color)
+    {
+        case RED:
+            PORTB |= RGB_R_MASK_B;
+            break;
+        
+        case GREEN:
+            PORTD |= (1 << PD7);
+            break;
+        
+        case BLUE:
+            PORTD |= (1 << PD6);
+            break;
+
+        case WHITE:
+            PORTB |= RGB_R_MASK_B;
+            PORTD |= RGB_GB_MASK_D;
+            break;
+
+        case OFF:
+        default:
+            break;
+    }
+}
+
 int main(void)
 {
-    // Pin 13 på Arduino Uno = PB5 på ATmega328P
-    DDRB |= LED_MASK_B;   // Sätt PB2-PB5 som utgång
+    DDRB |= LED_MASK_B | RGB_R_MASK_B;   // Sätt PB2-PB5 samt PB0 som utgång
+    DDRD |= RGB_GB_MASK_D; // Sätt PD6-PD7 som utgång
+    DDRD &= ~ENCODER_MASK_D; // Sätt PD2-PD4 som ingångar
 
     timer0_init_ms();
     adc_init_a0();
 
+    uint8_t prevCLK = (PIND & (1 << PD2)) >> PD2;
+    uint8_t currentCLK = 0;
+    uint8_t currentDT = 0;
     uint32_t lastToggle = 0;
     uint16_t interval = 250;
     uint8_t ledOn = 0;
     uint32_t lastAdcRead = 0;
     uint16_t adcLatest = 0;
 
+    RGB currentColor = OFF;
+
+    
+    
     while (1)
     {
         uint32_t now = millis();
+
+        //Encoder-delen som gör att man kan ändra färg genom att skruva på vredet åt olika håll. 
+        currentCLK = (PIND & (1 << PD2)) >> PD2;
+        currentDT = (PIND & (1 << PD3)) >> PD3;
+
+        if (currentCLK != prevCLK) 
+        {
+            if (currentCLK == 1) 
+            {
+                if (currentDT != currentCLK)
+                {
+                    currentColor = currentColor + 1;
+                    if (currentColor > WHITE)
+                    {
+                        currentColor = OFF; 
+                    } 
+                }
+                else
+                {
+                    if (currentColor == OFF) 
+                    {
+                        currentColor = WHITE;
+                    }
+                    else
+                    {
+                        currentColor = currentColor - 1;
+                    }
+                }
+            }
+        }
+        prevCLK = currentCLK;
+        set_rgb(currentColor);
 
         //ADC läses periodiskt var 20 ms för att undvika onödiga mätningar och blockering i huvudloopen.
         if (now - lastAdcRead >= 20) 

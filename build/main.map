@@ -130,7 +130,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x00000000      0x1d2
+.text           0x00000000      0x272
  *(.vectors)
  .vectors       0x00000000       0x68 C:/AVR/bin/../lib/gcc/avr/15.2.0/../../../../avr/lib/avr5/crtatmega328p.o
                 0x00000000                __vector_default
@@ -211,49 +211,50 @@ END GROUP
                 0x0000008c                __vector_16
                 0x0000008c                __vector_18
                 0x0000008c                __vector_20
- .text          0x00000090       0xb4 build/main.o
+ .text          0x00000090       0xec build/main.o
                 0x00000090                millis
                 0x000000a8                timer0_init_ms
                 0x000000c8                __vector_14
                 0x0000010e                adc_init_a0
                 0x0000011c                adc_read_blocking
- .text          0x00000144        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
- .text          0x00000144        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
-                0x00000144                        . = ALIGN (0x2)
+                0x00000144                set_rgb
+ .text          0x0000017c        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+ .text          0x0000017c        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000017c                        . = ALIGN (0x2)
  *(.text.*)
- .text.startup  0x00000144       0x8a build/main.o
-                0x00000144                main
+ .text.startup  0x0000017c       0xf2 build/main.o
+                0x0000017c                main
  .text.libgcc.mul
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  .text.libgcc.div
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
- .text.libgcc   0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+ .text.libgcc   0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  .text.libgcc.prologue
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  .text.libgcc.builtins
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  .text.libgcc.fmul
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  .text.libgcc.fixed
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  .text.libgcc.mul
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
  .text.libgcc.div
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
- .text.libgcc   0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+ .text.libgcc   0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
  .text.libgcc.prologue
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
  .text.libgcc.builtins
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
  .text.libgcc.fmul
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
  .text.libgcc.fixed
-                0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
-                0x000001ce                        . = ALIGN (0x2)
+                0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_clear_bss.o)
+                0x0000026e                        . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x000001ce        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
-                0x000001ce                _exit
-                0x000001ce                exit
+ .fini9         0x0000026e        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+                0x0000026e                _exit
+                0x0000026e                exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -272,18 +273,18 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x000001ce        0x4 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
+ .fini0         0x0000026e        0x4 C:/AVR/bin/../lib/gcc/avr/15.2.0/avr5\libgcc.a(_exit.o)
  *(.fini0)
  *(.hightext)
  *(.hightext*)
  *(.progmemx)
  *(.progmemx.*)
-                0x000001d2                        . = ALIGN (0x2)
+                0x00000272                        . = ALIGN (0x2)
  *(.jumptables)
  *(.jumptables*)
-                0x000001d2                        _etext = .
+                0x00000272                        _etext = .
 
-.data           0x00800100        0x0 load address 0x000001d2
+.data           0x00800100        0x0 load address 0x00000272
                 [!provide]                        PROVIDE (__data_start = .)
  *(.data)
  .data          0x00800100        0x0 C:/AVR/bin/../lib/gcc/avr/15.2.0/../../../../avr/lib/avr5/crtatmega328p.o
@@ -310,8 +311,8 @@ END GROUP
  *(.bss*)
  *(COMMON)
                 0x00800104                        PROVIDE (__bss_end = .)
-                0x000001d2                        __data_load_start = LOADADDR (.data)
-                0x000001d2                        __data_load_end = (__data_load_start + SIZEOF (.data))
+                0x00000272                        __data_load_start = LOADADDR (.data)
+                0x00000272                        __data_load_end = (__data_load_start + SIZEOF (.data))
 
 .noinit         0x00800104        0x0
                 [!provide]                        PROVIDE (__noinit_start = .)
