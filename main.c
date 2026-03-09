@@ -1,14 +1,16 @@
 #include <avr/io.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdint.h>
 #include <util/atomic.h>
-#include <stdio.h>
 
 #define LED_MASK_B ((1 << PB2) | (1 << PB3) | (1 << PB4) | (1 << PB5))
 #define RGB_R_MASK_B ((1 << PB0))
-#define ENCODER_MASK_D ((1 << PD2) | (1 << PD3) | (1 << PD4))
+#define ENCODER_MASK_D ((1 << PD2) | (1 << PD3))
+#define ENCODER_SW_MASK ((1 << PD4))
 #define RGB_GB_MASK_D ((1 << PD6) | (1 << PD7))
+#define ENCODER_BUTTON_1 ((1 << PB1))
+#define ENCODER_BUTTON_2 ((1 << PD5))
+#define DEBOUNCE_TIME_MS 20
 
 typedef enum
 {
@@ -96,22 +98,37 @@ void set_rgb(RGB color)
 
 int main(void)
 {
-    DDRB |= LED_MASK_B | RGB_R_MASK_B;   // Sätt PB2-PB5 samt PB0 som utgång
-    DDRD |= RGB_GB_MASK_D; // Sätt PD6-PD7 som utgång
-    DDRD &= ~ENCODER_MASK_D; // Sätt PD2-PD4 som ingångar
+    DDRB |= LED_MASK_B | RGB_R_MASK_B;   // Sätter PB2-PB5 samt PB0 som utgång
+    DDRD |= RGB_GB_MASK_D; // Sätter PD6-PD7 som utgång
+
+    DDRD &= ~ENCODER_MASK_D; // Sätter PD2-PD3 som ingångar
+    DDRD &= ~ENCODER_SW_MASK; // Sätter PD4 som ingång
+    DDRB &= ~ENCODER_BUTTON_1; // Sätter PB1 som ingång
+    DDRD &= ~ENCODER_BUTTON_2; // Sätter PD5 som ingång
+
+    PORTD |= ENCODER_MASK_D | ENCODER_SW_MASK | ENCODER_BUTTON_2;
+    PORTB |= ENCODER_BUTTON_1;
 
     timer0_init_ms();
     adc_init_a0();
 
-    uint8_t prevCLK = (PIND & (1 << PD2)) >> PD2;
     uint8_t currentCLK = 0;
     uint8_t currentDT = 0;
+    uint8_t prevEncState = (((PIND & (1 << PD2)) >> PD2) << 1) | ((PIND & (1 << PD3)) >> PD3);
+    uint8_t encState = prevEncState;
+    int8_t encoderDelta = 0;
     uint32_t lastToggle = 0;
     uint16_t interval = 250;
     uint8_t ledOn = 0;
     uint32_t lastAdcRead = 0;
     uint16_t adcLatest = 0;
-
+    uint8_t rgbSelected = 0;   // 0 = inaktiv, 1 = aktiv
+    uint8_t buttonNow = (PIND & ENCODER_SW_MASK) >> PD4;
+    uint8_t buttonPrev = buttonNow;
+    uint8_t buttonStable = buttonNow;
+    uint32_t lastButtonChange = 0;
+    uint32_t lastRgbToggle = 0;
+    uint8_t rgbBlinkOn = 0;
     RGB currentColor = OFF;
 
     
@@ -120,37 +137,97 @@ int main(void)
     {
         uint32_t now = millis();
 
-        //Encoder-delen som gör att man kan ändra färg genom att skruva på vredet åt olika håll. 
-        currentCLK = (PIND & (1 << PD2)) >> PD2;
-        currentDT = (PIND & (1 << PD3)) >> PD3;
+        buttonNow = (PIND & ENCODER_SW_MASK) >> PD4;
 
-        if (currentCLK != prevCLK) 
+        if (buttonNow != buttonPrev)
         {
-            if (currentCLK == 1) 
-            {
-                if (currentDT != currentCLK)
-                {
-                    currentColor = currentColor + 1;
-                    if (currentColor > WHITE)
-                    {
-                        currentColor = OFF; 
-                    } 
-                }
-                else
-                {
-                    if (currentColor == OFF) 
-                    {
-                        currentColor = WHITE;
-                    }
-                    else
-                    {
-                        currentColor = currentColor - 1;
+            lastButtonChange = now;
+            buttonPrev = buttonNow;
+        }
+
+        if (now - lastButtonChange >= DEBOUNCE_TIME_MS) {
+            if (buttonStable != buttonNow) {
+                buttonStable = buttonNow;
+
+                if (buttonStable == 0) {
+                    if (currentColor != OFF) {
+                        rgbSelected = !rgbSelected;
+                        rgbBlinkOn = 0;
+                        lastRgbToggle = now;
+                        encoderDelta = 0;
+                        prevEncState = (((PIND & (1 << PD2)) >> PD2) << 1) | ((PIND & (1 << PD3)) >> PD3);
                     }
                 }
             }
         }
-        prevCLK = currentCLK;
-        set_rgb(currentColor);
+
+        // Läs encoder som 2-bitars tillstånd och uppdatera vald RGB-färg när ett helt steg registrerats.
+        currentCLK = (PIND & (1 << PD2)) >> PD2;
+        currentDT  = (PIND & (1 << PD3)) >> PD3;
+        encState = (currentCLK << 1) | currentDT;
+
+        if (rgbSelected == 0)
+        {
+            // Medurs delsteg
+            if ((prevEncState == 0b00 && encState == 0b01) ||
+                (prevEncState == 0b01 && encState == 0b11) ||
+                (prevEncState == 0b11 && encState == 0b10) ||
+                (prevEncState == 0b10 && encState == 0b00))
+            {
+                encoderDelta--;
+            }
+            // Moturs delsteg
+            else if ((prevEncState == 0b00 && encState == 0b10) ||
+                    (prevEncState == 0b10 && encState == 0b11) ||
+                    (prevEncState == 0b11 && encState == 0b01) ||
+                    (prevEncState == 0b01 && encState == 0b00))
+            {
+                encoderDelta++;
+            }
+
+            // Ett helt mekaniskt steg medurs
+            if (encoderDelta >= 2)
+            {
+                currentColor = currentColor + 1;
+                if (currentColor > WHITE)
+                {
+                    currentColor = OFF;
+                }
+                encoderDelta = 0;
+            }
+            // Ett helt mekaniskt steg moturs
+            else if (encoderDelta <= -2)
+            {
+                if (currentColor == OFF)
+                {
+                    currentColor = WHITE;
+                }
+                else
+                {
+                    currentColor = currentColor - 1;
+                }
+                encoderDelta = 0;
+            }
+        }
+
+        prevEncState = encState;
+
+        if (rgbSelected == 0) {
+            set_rgb(currentColor);
+        }
+        else {
+            if (now - lastRgbToggle >= 250) {
+                lastRgbToggle = now;
+                rgbBlinkOn = !rgbBlinkOn;
+            }
+
+            if (rgbBlinkOn == 1) {
+                set_rgb(currentColor);
+            }
+            else {
+                set_rgb(OFF);
+            }
+        }
 
         //ADC läses periodiskt var 20 ms för att undvika onödiga mätningar och blockering i huvudloopen.
         if (now - lastAdcRead >= 20) 
