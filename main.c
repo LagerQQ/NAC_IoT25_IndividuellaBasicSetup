@@ -19,7 +19,29 @@ typedef enum
     GREEN = 2,
     BLUE = 3,
     WHITE = 4
+    
 }RGB;
+
+typedef enum
+{
+    LED_BLINK = 0,
+    LED_TOGGLE = 1
+    
+}LedMode;
+
+// Globala variabler
+LedMode redMode = LED_BLINK;
+LedMode greenMode = LED_BLINK;
+LedMode blueMode = LED_BLINK;
+LedMode whiteMode = LED_BLINK;
+
+uint8_t redToggleOn = 0;
+uint8_t greenToggleOn = 0;
+uint8_t blueToggleOn = 0;
+uint8_t whiteToggleOn = 0;
+
+uint8_t rgbSelected = 0;   // 0 = inaktiv, 1 = aktiv
+RGB currentColor = OFF;
 
 volatile uint32_t g_ms = 0;
 
@@ -96,6 +118,169 @@ void set_rgb(RGB color)
     }
 }
 
+void handle_button2(void) 
+{
+    if (rgbSelected == 1)
+    {
+        switch (currentColor)
+        {
+            case RED:
+                redMode = LED_BLINK;
+                redToggleOn = 0;
+                break;
+            
+            case GREEN:
+                greenMode = LED_BLINK;
+                greenToggleOn = 0;
+                break;
+
+            case BLUE:
+                blueMode = LED_BLINK;
+                blueToggleOn = 0;
+                break;
+
+            case WHITE:
+                whiteMode = LED_BLINK;
+                whiteToggleOn = 0;
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
+void handle_button1(void)
+{
+    if (rgbSelected == 1)
+    {
+        switch (currentColor)
+        {
+            case RED:
+                if (redMode == LED_BLINK)
+                {
+                    redMode = LED_TOGGLE;
+                    redToggleOn = 1;
+                }
+                else
+                {
+                    redToggleOn = !redToggleOn;
+                }
+
+                break;
+
+            case GREEN:
+                if (greenMode == LED_BLINK)
+                {
+                    greenMode = LED_TOGGLE;
+                    greenToggleOn = 1;
+                }
+                else
+                {
+                    greenToggleOn = !greenToggleOn;
+                }
+
+                break;
+
+            case BLUE:
+                if (blueMode == LED_BLINK)
+                {
+                    blueMode = LED_TOGGLE;
+                    blueToggleOn = 1;
+                }
+                else
+                {
+                    blueToggleOn = !blueToggleOn;
+                }
+
+                break;
+
+            case WHITE:
+                if (whiteMode == LED_BLINK)
+                {
+                    whiteMode = LED_TOGGLE;
+                    whiteToggleOn = 1;
+                }
+                else
+                {
+                    whiteToggleOn = !whiteToggleOn;
+                }
+
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
+void update_regular_leds(uint8_t ledOn)
+{
+    PORTB &= ~LED_MASK_B;
+    if (redMode == LED_BLINK)
+    {
+        if (ledOn == 1)
+        {
+            PORTB |= (1 << PB5);
+        }
+    }
+    else
+    {
+        if (redToggleOn == 1)
+        {
+            PORTB |= (1 << PB5);
+        }
+    }
+    
+    if (greenMode == LED_BLINK)
+    {
+        if (ledOn == 1)
+        {
+            PORTB |= (1 << PB3);
+        }
+    }
+
+    else
+    {
+        if (greenToggleOn == 1)
+        {
+            PORTB |= (1 << PB3);
+        }
+    }
+
+    if (blueMode == LED_BLINK)
+    {
+        if (ledOn == 1)
+        {
+            PORTB |= (1 << PB4);
+        }
+    }
+    
+    else
+    {
+        if (blueToggleOn == 1)
+        {
+            PORTB |= (1 << PB4);
+        }
+    }
+
+    if (whiteMode == LED_BLINK)
+    {
+        if (ledOn == 1)
+        {
+            PORTB |= (1 << PB2);
+        }
+    }
+    
+    else
+    {
+        if (whiteToggleOn == 1)
+        {
+            PORTB |= (1 << PB2);
+        }
+    }
+}
+
 int main(void)
 {
     DDRB |= LED_MASK_B | RGB_R_MASK_B;   // Sätter PB2-PB5 samt PB0 som utgång
@@ -122,14 +307,22 @@ int main(void)
     uint8_t ledOn = 0;
     uint32_t lastAdcRead = 0;
     uint16_t adcLatest = 0;
-    uint8_t rgbSelected = 0;   // 0 = inaktiv, 1 = aktiv
     uint8_t buttonNow = (PIND & ENCODER_SW_MASK) >> PD4;
     uint8_t buttonPrev = buttonNow;
     uint8_t buttonStable = buttonNow;
     uint32_t lastButtonChange = 0;
     uint32_t lastRgbToggle = 0;
     uint8_t rgbBlinkOn = 0;
-    RGB currentColor = OFF;
+
+    uint8_t button1Now = (PINB & (1 << PB1)) >> PB1;
+    uint8_t button1Prev = button1Now;
+    uint8_t button1Stable = button1Now;
+    uint32_t lastButton1Change = 0;
+
+    uint8_t button2Now = (PIND & (1 << PD5)) >> PD5;
+    uint8_t button2Prev = button2Now;
+    uint8_t button2Stable = button2Now;
+    uint32_t lastButton2Change = 0;
 
     
     
@@ -161,6 +354,42 @@ int main(void)
             }
         }
 
+        button1Now = (PINB & (1 << PB1)) >> PB1;
+
+        if (button1Now != button1Prev)
+        {
+            lastButton1Change = now;
+            button1Prev = button1Now;
+        }
+
+        if (now - lastButton1Change >= DEBOUNCE_TIME_MS) {
+            if (button1Stable != button1Now) {
+                button1Stable = button1Now;
+                
+                if (button1Stable == 0) {
+                    handle_button1();
+                }
+            }
+        }
+
+        button2Now = (PIND & (1 << PD5)) >> PD5;
+
+        if (button2Now != button2Prev) {
+            lastButton2Change = now;
+            button2Prev = button2Now;
+        }
+
+        if (now - lastButton2Change >= DEBOUNCE_TIME_MS) {
+            if (button2Stable != button2Now) {
+                button2Stable = button2Now;
+
+                if (button2Stable == 0) {
+                    handle_button2();
+                }
+            }
+        }
+
+
         // Läs encoder som 2-bitars tillstånd och uppdatera vald RGB-färg när ett helt steg registrerats.
         currentCLK = (PIND & (1 << PD2)) >> PD2;
         currentDT  = (PIND & (1 << PD3)) >> PD3;
@@ -185,7 +414,7 @@ int main(void)
                 encoderDelta++;
             }
 
-            // Ett helt mekaniskt steg medurs
+            // Denna encoder ger 2 delsteg per mekaniskt hack
             if (encoderDelta >= 2)
             {
                 currentColor = currentColor + 1;
@@ -243,15 +472,9 @@ int main(void)
         {
             lastToggle += interval;
             ledOn = !ledOn;
-            if(ledOn == 1) 
-            {
-                PORTB |= LED_MASK_B;
-            }
-            else 
-            {
-                PORTB &= ~LED_MASK_B;
-            }
         }
+
+        update_regular_leds(ledOn);
     }
 
     return 0;
